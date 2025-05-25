@@ -35,7 +35,7 @@ specify it in the options like in the following:
 
 ```
   plugins: [
-    devtoolsJson({uuid: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b":}),
+    devtoolsJson({uuid: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b"}),
     // ...
   ]
 ```
