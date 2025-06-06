@@ -57,5 +57,30 @@ describe('#VitePluginDevToolsJson', () => {
 
       await server.close();
     });
+
+    it("should detect WSL", async () => {
+      // fake this data for the test.
+      process.env.WSL_DISTRO_NAME = "my-wsl-distro.7-11";
+
+      const server = await createServer({
+        plugins: [VitePluginDevToolsJson()],
+        server: {
+          port,
+          host: true,
+        },
+      });
+
+      await server.listen();
+
+      const response1 = await request(server.httpServer!).get(
+        "/.well-known/appspecific/com.chrome.devtools.json"
+      );
+
+      expect(response1.text).include("wsl.localhost");
+      expect(response1.text).include("my-wsl-distro.7-11");
+      expect(response1.text).include("vite-plugin-devtools-json");
+
+      await server.close();
+    });
   });
 });
