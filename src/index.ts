@@ -66,6 +66,14 @@ const plugin = (options?: {uuid: string}): Plugin => ({
         root = path.resolve(process.cwd(), root);
       }
 
+      // WSL case detection
+      if (process.env.WSL_DISTRO_NAME) {
+        // Convert Linux path to Windows path format for WSL
+        root = path
+          .join("\\\\wsl.localhost", process.env.WSL_DISTRO_NAME, root)
+          .replace(/\//g, "\\");
+      }
+
       const uuid = getOrCreateUUID();
       const devtoolsJson: DevToolsJSON = {
         workspace: {
