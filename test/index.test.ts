@@ -1,6 +1,7 @@
 import request from 'supertest';
 import {createServer} from 'vite';
 import {describe, expect, it} from 'vitest';
+import path from 'path';
 
 import VitePluginDevToolsJson from '../src';
 
@@ -81,6 +82,41 @@ describe('#VitePluginDevToolsJson', () => {
       expect(response1.text).include("vite-plugin-devtools-json");
 
       await server.close();
+    });
+
+    it('should respect the `projectRoot` option', async () => {
+      delete process.env.WSL_DISTRO_NAME;
+      const customRoot = path.resolve('/tmp/custom-project-root');
+      const server = await createServer({
+        plugins: [VitePluginDevToolsJson({ projectRoot: customRoot })],
+        server: { port, host: true },
+      });
+
+      await server.listen();
+
+      const response = await request(server.httpServer!)
+        .get('/.well-known/appspecific/com.chrome.devtools.json');
+      const json = JSON.parse(response.text);
+      expect(json.workspace.root).to.equal(customRoot);
+
+      await server.close();
+    });
+
+    it('should skip path normalization when `normalizeForChrome` is false', async () => {
+      process.env.WSL_DISTRO_NAME = 'fake-distro';
+      const server = await createServer({
+        plugins: [VitePluginDevToolsJson({ normalizeForChrome: false })],
+        server: { port, host: true },
+      });
+      await server.listen();
+
+      const response = await request(server.httpServer!)
+        .get('/.well-known/appspecific/com.chrome.devtools.json');
+      const json = JSON.parse(response.text);
+      expect(json.workspace.root).to.not.include('wsl.localhost');
+
+      await server.close();
+      delete process.env.WSL_DISTRO_NAME;
     });
   });
 });

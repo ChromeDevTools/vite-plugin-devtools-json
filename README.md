@@ -40,6 +40,30 @@ specify it in the options like in the following:
   ]
 ```
 
+### Options
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `projectRoot` | `string` | `config.root` | Absolute path that will be reported to DevTools. Useful for monorepos or when the Vite root is not the desired folder. |
+| `normalizeForChrome` | `boolean` | `true` | Convert Linux paths to UNC form so Chrome on Windows (WSL / Docker Desktop) can mount them. Pass `false` to disable. |
+| `uuid` | `string` | auto-generated | Fixed UUID if you prefer to control it yourself. |
+
+Example with all options:
+
+```js
+import { defineConfig } from 'vite';
+import devtoolsJson from 'vite-plugin-devtools-json';
+
+export default defineConfig({
+  plugins: [
+    devtoolsJson({
+      projectRoot: '/absolute/path/to/project',
+      normalizeForChrome: true,
+      uuid: '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'
+    })
+  ]
+});
+```
 
 The `/.well-known/appspecific/com.chrome.devtools.json` endpoint will serve the
 project settings as JSON with the following structure

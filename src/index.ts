@@ -3,6 +3,29 @@ import path from 'path';
 import {v4, validate} from 'uuid';
 import {Plugin} from 'vite';
 
+// Plugin options
+interface DevToolsJsonOptions {
+  /**
+   * Optional fixed UUID. If omitted the plugin will generate
+   * (and cache) one automatically, which is the previous default behaviour.
+   */
+  uuid?: string;
+
+  /**
+   * Absolute (or relative) path that should be reported as the project root
+   * in DevTools.  When omitted we fall back to Vite's `config.root` logic
+   * – identical to the original implementation.
+   */
+  projectRoot?: string;
+
+  /**
+   * Whether to rewrite Linux paths to UNC form so Chrome running on Windows
+   * (WSL or Docker Desktop) can mount them as a workspace.  Enabled by
+   * default to preserve the original behaviour; pass `false` to opt-out.
+   */
+  normalizeForChrome?: boolean;
+}
+
 interface DevToolsJSON {
   workspace?: {
     root: string,
@@ -12,7 +35,7 @@ interface DevToolsJSON {
 
 const ENDPOINT = '/.well-known/appspecific/com.chrome.devtools.json';
 
-const plugin = (options?: {uuid: string}): Plugin => ({
+const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
   name: 'devtools-json',
   enforce: 'post',
 
@@ -25,7 +48,7 @@ const plugin = (options?: {uuid: string}): Plugin => ({
     }
 
     const getOrCreateUUID = () => {
-      if (options?.uuid) {
+      if (options.uuid) {
         return options.uuid;
       }
       // Per https://vite.dev/config/shared-options.html#cachedir
@@ -57,23 +80,44 @@ const plugin = (options?: {uuid: string}): Plugin => ({
       return uuid;
     };
 
-    server.middlewares.use(ENDPOINT, async (req, res) => {
-      // Per https://vite.dev/config/shared-options.html#root the
-      // `config.root` can either be an absolute path, or a path
-      // relative to the current working directory.
-      let {root} = config;
-      if (!path.isAbsolute(root)) {
-        root = path.resolve(process.cwd(), root);
-      }
+    server.middlewares.use(ENDPOINT, async (_req, res) => {
+      // Determine the project root that will be reported to DevTools.
+      const resolveProjectRoot = (): string => {
+        if (options.projectRoot) {
+          return path.resolve(options.projectRoot);
+        }
+        // Fall back to Vite's root handling (original behaviour)
+        let {root} = config;
+        if (!path.isAbsolute(root)) {
+          root = path.resolve(process.cwd(), root);
+        }
+        return root;
+      };
 
-      // WSL case detection
-      if (process.env.WSL_DISTRO_NAME) {
-        // Convert Linux path to Windows path format for WSL
-        root = path
-          .join("\\\\wsl.localhost", process.env.WSL_DISTRO_NAME, root)
-          .replace(/\//g, "\\");
-      }
+      const maybeNormalizeForChrome = (absRoot: string): string => {
+        if (options.normalizeForChrome === false) return absRoot;
 
+        // WSL path rewrite
+        if (process.env.WSL_DISTRO_NAME) {
+          const distro = process.env.WSL_DISTRO_NAME;
+          const withoutLeadingSlash = absRoot.replace(/^\//, '');
+          return path
+            .join('\\\\wsl.localhost', distro, withoutLeadingSlash)
+            .replace(/\//g, '\\');
+        }
+
+        // Docker Desktop on Windows path rewrite
+        if (process.env.DOCKER_DESKTOP && !absRoot.startsWith('\\\\')) {
+          const withoutLeadingSlash = absRoot.replace(/^\//, '');
+          return path
+            .join('\\\\wsl.localhost', 'docker-desktop-data', withoutLeadingSlash)
+            .replace(/\//g, '\\');
+        }
+
+        return absRoot;
+      };
+
+      let root = maybeNormalizeForChrome(resolveProjectRoot());
       const uuid = getOrCreateUUID();
       const devtoolsJson: DevToolsJSON = {
         workspace: {
