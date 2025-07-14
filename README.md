@@ -45,7 +45,7 @@ specify it in the options like in the following:
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `projectRoot` | `string` | `config.root` | Absolute path that will be reported to DevTools. Useful for monorepos or when the Vite root is not the desired folder. |
-| `normalizeForChrome` | `boolean` | `true` | Convert Linux paths to UNC form so Chrome on Windows (WSL / Docker Desktop) can mount them. Pass `false` to disable. |
+| `normalizeForWindowsContainer` | `boolean` | `true` | Convert Linux paths to UNC form so Chrome on Windows (WSL / Docker Desktop) can mount them (e.g. via WSL or Docker Desktop). Pass `false` to disable. <br/>_Alias:_ `normalizeForChrome` (deprecated)_ |
 | `uuid` | `string` | auto-generated | Fixed UUID if you prefer to control it yourself. |
 
 Example with all options:
@@ -58,7 +58,7 @@ export default defineConfig({
   plugins: [
     devtoolsJson({
       projectRoot: '/absolute/path/to/project',
-      normalizeForChrome: true,
+      normalizeForWindowsContainer: true,
       uuid: '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'
     })
   ]

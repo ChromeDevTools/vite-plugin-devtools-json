@@ -102,10 +102,10 @@ describe('#VitePluginDevToolsJson', () => {
       await server.close();
     });
 
-    it('should skip path normalization when `normalizeForChrome` is false', async () => {
+    it('should skip path normalization when `normalizeForWindowsContainer` is false', async () => {
       process.env.WSL_DISTRO_NAME = 'fake-distro';
       const server = await createServer({
-        plugins: [VitePluginDevToolsJson({ normalizeForChrome: false })],
+        plugins: [VitePluginDevToolsJson({ normalizeForWindowsContainer: false })],
         server: { port, host: true },
       });
       await server.listen();
@@ -117,6 +117,26 @@ describe('#VitePluginDevToolsJson', () => {
 
       await server.close();
       delete process.env.WSL_DISTRO_NAME;
+    });
+
+    it('should convert path when running inside Docker Desktop on Windows', async () => {
+      delete process.env.WSL_DISTRO_NAME;
+      process.env.DOCKER_DESKTOP = 'true';
+
+      const server = await createServer({
+        plugins: [VitePluginDevToolsJson()],
+        server: { port, host: true },
+      });
+
+      await server.listen();
+
+      const response = await request(server.httpServer!)
+        .get('/.well-known/appspecific/com.chrome.devtools.json');
+      const json = JSON.parse(response.text);
+      expect(json.workspace.root).to.include('docker-desktop-data');
+
+      await server.close();
+      delete process.env.DOCKER_DESKTOP;
     });
   });
 });

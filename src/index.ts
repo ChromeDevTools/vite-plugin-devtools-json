@@ -13,17 +13,19 @@ interface DevToolsJsonOptions {
 
   /**
    * Absolute (or relative) path that should be reported as the project root
-   * in DevTools.  When omitted we fall back to Vite's `config.root` logic
-   * – identical to the original implementation.
+   * in DevTools. When omitted, we fall back to Vite’s `config.root` logic.
    */
   projectRoot?: string;
 
   /**
-   * Whether to rewrite Linux paths to UNC form so Chrome running on Windows
-   * (WSL or Docker Desktop) can mount them as a workspace.  Enabled by
-   * default to preserve the original behaviour; pass `false` to opt-out.
+   * @deprecated Use `normalizeForWindowsContainer` instead. Will be removed in a future major version.
    */
   normalizeForChrome?: boolean;
+  /**
+   * Whether to rewrite Linux paths to UNC form so Chrome running on Windows
+   * (WSL or Docker Desktop) can mount them as a workspace. Enabled by default.
+   */
+  normalizeForWindowsContainer?: boolean;
 }
 
 interface DevToolsJSON {
@@ -80,6 +82,21 @@ const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
       return uuid;
     };
 
+    // Determine effective normalisation flag once so we can reuse it.
+    const normalizePaths =
+      options.normalizeForWindowsContainer ??
+      (options.normalizeForChrome ?? true);
+
+    // Emit deprecation warning if old option is used in isolation.
+    if (
+      Object.prototype.hasOwnProperty.call(options, 'normalizeForChrome') &&
+      options.normalizeForWindowsContainer === undefined
+    ) {
+      logger.warn(
+        '[vite-plugin-devtools-json] "normalizeForChrome" is deprecated – please rename to "normalizeForWindowsContainer".'
+      );
+    }
+
     server.middlewares.use(ENDPOINT, async (_req, res) => {
       // Determine the project root that will be reported to DevTools.
       const resolveProjectRoot = (): string => {
@@ -87,15 +104,15 @@ const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
           return path.resolve(options.projectRoot);
         }
         // Fall back to Vite's root handling (original behaviour)
-        let {root} = config;
-        if (!path.isAbsolute(root)) {
-          root = path.resolve(process.cwd(), root);
-        }
+      let {root} = config;
+      if (!path.isAbsolute(root)) {
+        root = path.resolve(process.cwd(), root);
+      }
         return root;
       };
 
-      const maybeNormalizeForChrome = (absRoot: string): string => {
-        if (options.normalizeForChrome === false) return absRoot;
+      const maybeNormalizePath = (absRoot: string): string => {
+        if (!normalizePaths) return absRoot;
 
         // WSL path rewrite
         if (process.env.WSL_DISTRO_NAME) {
@@ -112,12 +129,12 @@ const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
           return path
             .join('\\\\wsl.localhost', 'docker-desktop-data', withoutLeadingSlash)
             .replace(/\//g, '\\');
-        }
+      }
 
         return absRoot;
       };
 
-      let root = maybeNormalizeForChrome(resolveProjectRoot());
+      let root = maybeNormalizePath(resolveProjectRoot());
       const uuid = getOrCreateUUID();
       const devtoolsJson: DevToolsJSON = {
         workspace: {
