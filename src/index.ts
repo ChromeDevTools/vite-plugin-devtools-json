@@ -78,7 +78,6 @@ const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
       }
       const uuid = v4();
       fs.writeFileSync(uuidPath, uuid, {encoding: 'utf-8'});
-      logger.info(`Generated UUID '${uuid}' for DevTools project settings.`);
       return uuid;
     };
 
