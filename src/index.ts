@@ -145,6 +145,12 @@ const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(devtoolsJson, null, 2));
     });
+  },
+  configurePreviewServer(server) {
+    server.middlewares.use(ENDPOINT, async (req, res) => {
+      res.writeHead(404);
+      res.end();
+    });
   }
 });
 
