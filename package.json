@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-devtools-json",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Vite plugin for generating `com.chrome.devtools.json` on the fly in the devserver.",
   "type": "module",
   "main": "dist/index.cjs",
