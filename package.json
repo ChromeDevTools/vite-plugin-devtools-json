@@ -36,6 +36,17 @@
     "devtools",
     "chrome"
   ],
+  "compatiblePackages": {
+    "schemaVersion": 1,
+    "rolldown": {
+      "type": "incompatible",
+      "reason": "Uses Vite-specific APIs"
+    },
+    "rollup": {
+      "type": "incompatible",
+      "reason": "Uses Vite-specific APIs"
+    }
+  },
   "author": "Benedikt Meurer <bmeurer@google.com>",
   "bugs": {
     "url": "https://github.com/ChromeDevTools/vite-plugin-devtools-json/issues"
