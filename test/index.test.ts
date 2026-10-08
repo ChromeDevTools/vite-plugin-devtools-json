@@ -138,5 +138,30 @@ describe('#VitePluginDevToolsJson', () => {
       await server.close();
       delete process.env.DOCKER_DESKTOP;
     });
+
+    it('should reject non-localhost Host headers (DNS rebinding protection)', async () => {
+      const server = await createServer({
+        plugins: [VitePluginDevToolsJson()],
+        server: {
+          port,
+          host: true,
+        },
+      });
+
+      await server.listen();
+
+      const blockedResponse = await request(server.httpServer!)
+        .get('/.well-known/appspecific/com.chrome.devtools.json')
+        .set('Host', `attacker.example:${port}`);
+      expect(blockedResponse.status).to.equal(403);
+      expect(blockedResponse.text).to.equal('');
+
+      const allowedResponse = await request(server.httpServer!)
+        .get('/.well-known/appspecific/com.chrome.devtools.json')
+        .set('Host', `localhost:${port}`);
+      expect(allowedResponse.status).to.equal(200);
+
+      await server.close();
+    });
   });
 });

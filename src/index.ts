@@ -37,6 +37,29 @@ interface DevToolsJSON {
 
 const ENDPOINT = '/.well-known/appspecific/com.chrome.devtools.json';
 
+const IPV4_LOOPBACK_RE = /^127(?:\.\d{1,3}){3}$/;
+
+function isLocalhost(hostHeader: string | undefined): boolean {
+  if (!hostHeader) {
+    return false;
+  }
+  try {
+    const url = new URL(`http://${hostHeader}`);
+    if (url.host !== hostHeader.toLowerCase()) {
+      return false;
+    }
+    const {hostname} = url;
+    return (
+      hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '[::1]' ||
+      IPV4_LOOPBACK_RE.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
   name: 'devtools-json',
   enforce: 'post',
@@ -96,7 +119,12 @@ const plugin = (options: DevToolsJsonOptions = {}): Plugin => ({
       );
     }
 
-    server.middlewares.use(ENDPOINT, async (_req, res) => {
+    server.middlewares.use(ENDPOINT, async (req, res) => {
+      if (!isLocalhost(req.headers.host)) {
+        res.writeHead(403);
+        res.end();
+        return;
+      }
       // Determine the project root that will be reported to DevTools.
       const resolveProjectRoot = (): string => {
         if (options.projectRoot) {
