@@ -86,8 +86,24 @@ project illustrating how to use the plugin in practice.
 
 ## Publishing
 
-**Googlers:** We use [go/wombat-dressing-room](http://go/wombat-dressing-room)
-for publishing.
+The package is published to npm by the
+[`publish-on-tag`](.github/workflows/publish-on-tag.yml) GitHub Actions
+workflow, which uses npm [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+(no npm tokens involved) and generates
+[provenance attestations](https://docs.npmjs.com/generating-provenance-statements).
+
+To publish a new version:
+
+1. Bump the `version` in `package.json` and land that change on `main`.
+2. Tag the release commit and push the tag:
+
+   ```sh
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+
+Pushing the tag triggers the workflow, which builds and tests the package and
+then runs `npm publish`.
 
 ## License
 
