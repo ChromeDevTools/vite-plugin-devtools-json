@@ -7,7 +7,7 @@
         "noImplicitAny": true,
         "noUnusedLocals": true,
         "module": "ESNext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "sourceMap": false,
         "outDir": "dist",
         "target": "ES2020",

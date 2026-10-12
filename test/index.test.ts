@@ -145,6 +145,10 @@ describe('#VitePluginDevToolsJson', () => {
         server: {
           port,
           host: true,
+          // Disable Vite's built-in host validation, which (depending on the
+          // Vite version) runs before plugin middlewares and would answer this
+          // request itself, so that the plugin's own check is exercised.
+          allowedHosts: true,
         },
       });
 
